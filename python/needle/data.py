@@ -291,10 +291,6 @@ class NDArrayDataset(Dataset):
         return tuple([a[i] for a in self.arrays])
 
 
-
-
-
-
 class Dictionary(object):
     """
     Creates a dictionary from a list of words, mapping each word to a
@@ -329,7 +325,6 @@ class Dictionary(object):
         ### BEGIN YOUR SOLUTION
         return len(self.word2idx)
         ### END YOUR SOLUTION
-
 
 
 class Corpus(object):
@@ -429,3 +424,20 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
         device=device, dtype=dtype)
     return data, target
     ### END YOUR SOLUTION
+
+
+class KDDCUPDataset(Dataset):
+    def __init__(self):
+        ### BEGIN YOUR SOLUTION
+        super().__init__()
+        ### END YOUR SOLUTION
+
+    def __getitem__(self, index) -> object:
+        ### BEGIN YOUR SOLUTION
+        pass
+        ### END YOUR SOLUTION
+
+    def __len__(self) -> int:
+        ### BEGIN YOUR SOLUTION
+        pass
+        ### END YOUR SOLUTION
