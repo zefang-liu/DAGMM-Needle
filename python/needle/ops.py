@@ -683,3 +683,49 @@ class Conv(TensorOp):
 
 def conv(a, b, stride=1, padding=1):
     return Conv(stride, padding)(a, b)
+
+
+class Cholesky(TensorOp):
+    def __init__(self):
+        pass
+
+    def compute(self, A: NDArray):
+        """
+        Cholesky decomposition, mirroring LAPACK's DPOTF2
+        """
+        ### BEGIN YOUR SOLUTION
+        import numpy.linalg as la
+        return NDArray(la.cholesky(A.numpy()), device=A.device)
+        ### END YOUR SOLUTION
+
+    @staticmethod
+    def _Phi(A):
+        """
+        Return lower-triangle of matrix and halve the diagonal
+        """
+        import numpy as np
+        A = np.tril(A)
+        A[np.diag_indices_from(A)] *= 0.5
+        return A
+
+    def gradient(self, out_grad: Tensor, node: Tensor):
+        """
+        Reverse-mode differentiation through the Cholesky decomposition
+        """
+        ### BEGIN YOUR SOLUTION
+        import numpy.linalg as la
+
+        L_bar = out_grad.realize_cached_data().numpy()
+        L = node.realize_cached_data().numpy()
+
+        P = self._Phi(L.T @ L_bar)
+        L_inv = la.inv(L)
+        A_bar = self._Phi(L_inv.T @ (P + P.T) @ L_inv)
+        A_bar = (A_bar + A_bar.T) / 2
+
+        return Tensor(A_bar, device=out_grad.device, dtype=out_grad.dtype)
+        ### END YOUR SOLUTION
+
+
+def cholesky(a):
+    return Cholesky()(a)
