@@ -699,6 +699,20 @@ def pairwise_distance(x1, x2, p=2, dim=1):
     return norm(x1 - x2, p=p, dim=dim)
 
 
+def relative_distance(x1, x2, p=2, dim=1):
+    return pairwise_distance(x1, x2, p=p, dim=dim) / norm(x1, p=p, dim=dim)
+
+
+def softmax(x, dim=1):
+    new_shape = list(x.shape)
+    new_shape[dim] = 1
+    new_shape = tuple(new_shape)
+    out = exp(x - broadcast_to(reshape(
+        logsumexp(x, axes=(dim,)), shape=new_shape
+    ), shape=x.shape))
+    return out
+
+
 class Cholesky(TensorOp):
     def __init__(self):
         pass

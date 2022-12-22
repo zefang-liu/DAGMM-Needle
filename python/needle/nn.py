@@ -154,6 +154,14 @@ class Sequential(Module):
         ### END YOUR SOLUTION
 
 
+class Softmax(Module):
+    def forward(self, logits: Tensor):
+        ### BEGIN YOUR SOLUTION
+        out = ops.softmax(logits, dim=1)
+        return out
+        ### END YOUR SOLUTION
+
+
 class SoftmaxLoss(Module):
     def forward(self, logits: Tensor, y: Tensor):
         ### BEGIN YOUR SOLUTION

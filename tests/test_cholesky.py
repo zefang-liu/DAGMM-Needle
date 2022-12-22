@@ -125,6 +125,41 @@ def test_op_pairwise_distance(x_shape, dim, backward, device):
         assert err_grad < 1e-2, "input grads match"
 
 
+op_softmax_params = [
+    ((3, 4), 0),
+    ((3, 4), 1),
+    ((4, 5), 1),
+]
+@pytest.mark.parametrize("x_shape, dim", op_softmax_params)
+@pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
+@pytest.mark.parametrize("backward", [False, True], ids=["forward", "backward"])
+def test_op_softmax(x_shape, dim, backward, device):
+    np.random.seed(0)
+    x_array = np.random.randn(*x_shape)
+
+    x = ndl.Tensor(x_array, device=device)
+    y = ndl.softmax(x, dim=dim)
+    y_sum = y.sum()
+
+    if backward:
+        y_sum.backward()
+
+    x_tensor = torch.Tensor(x_array).float()
+    x_tensor.requires_grad = True
+    y_tensor = torch.softmax(x_tensor, dim=dim)
+    y_sum_tensor = y_tensor.sum()
+
+    if backward:
+        y_sum_tensor.backward()
+
+    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
+
+    if backward:
+        err_grad = np.linalg.norm(x_tensor.grad.numpy() - x.grad.numpy())
+        assert err_grad < 1e-2, "input grads match"
+
+
 @pytest.mark.parametrize("n_dim", [3, 4, 5])
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 @pytest.mark.parametrize("backward", [False, True], ids=["forward", "backward"])
