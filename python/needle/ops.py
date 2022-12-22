@@ -476,7 +476,6 @@ class Stack(TensorOp):
         return out
         ### END YOUR SOLUTION
 
-
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
         return split(out_grad, self.axis)
@@ -683,6 +682,21 @@ class Conv(TensorOp):
 
 def conv(a, b, stride=1, padding=1):
     return Conv(stride, padding)(a, b)
+
+
+def norm(x, p=2, dim=1):
+    return summation(x ** p, axes=dim) ** (1 / p)
+
+
+def cosine_similarity(x1, x2, dim=1):
+    out = summation(x1 * x2, axes=dim)
+    x1_norm = norm(x1, dim=dim)
+    x2_norm = norm(x2, dim=dim)
+    return out / (x1_norm * x2_norm)
+
+
+def pairwise_distance(x1, x2, p=2, dim=1):
+    return norm(x1 - x2, p=p, dim=dim)
 
 
 class Cholesky(TensorOp):

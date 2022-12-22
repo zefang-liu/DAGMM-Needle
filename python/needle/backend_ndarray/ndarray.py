@@ -228,6 +228,9 @@ class NDArray:
     def flat(self):
         return self.reshape((self.size,))
 
+    def copy(self):
+        return NDArray(self.compact(), device=self.device)
+
     def reshape(self, new_shape):
         """
         Reshape the matrix without copying memory.  This will return a matrix
