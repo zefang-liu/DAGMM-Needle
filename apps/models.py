@@ -78,7 +78,7 @@ class DAGMM(nn.Module):
         ### END YOUR SOLUTION
 
     @staticmethod
-    def get_sample_energy():
+    def get_sample_energy(z, phi, mu, Sigma):
         ### BEGIN YOUR SOLUTION
         pass
         ### END YOUR SOLUTION

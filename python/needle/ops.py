@@ -302,7 +302,7 @@ class MatMul(TensorOp):
         a_axes = [axis for axis in range(len(node.shape) - len(a.shape))]
         b_axes = [axis for axis in range(len(node.shape) - len(b.shape))]
         return summation(matmul(out_grad, transpose(b)), tuple(a_axes)), \
-               summation(matmul(transpose(a), out_grad), tuple(b_axes))
+            summation(matmul(transpose(a), out_grad), tuple(b_axes))
         ### END YOUR SOLUTION
 
 
@@ -685,25 +685,34 @@ def conv(a, b, stride=1, padding=1):
 
 
 def norm(x, p=2, dim=1):
+    ### BEGIN YOUR SOLUTION
     return summation(x ** p, axes=dim) ** (1 / p)
+    ### END YOUR SOLUTION
 
 
 def cosine_similarity(x1, x2, dim=1):
+    ### BEGIN YOUR SOLUTION
     out = summation(x1 * x2, axes=dim)
     x1_norm = norm(x1, dim=dim)
     x2_norm = norm(x2, dim=dim)
     return out / (x1_norm * x2_norm)
+    ### END YOUR SOLUTION
 
 
 def pairwise_distance(x1, x2, p=2, dim=1):
+    ### BEGIN YOUR SOLUTION
     return norm(x1 - x2, p=p, dim=dim)
+    ### END YOUR SOLUTION
 
 
 def relative_distance(x1, x2, p=2, dim=1):
+    ### BEGIN YOUR SOLUTION
     return pairwise_distance(x1, x2, p=p, dim=dim) / norm(x1, p=p, dim=dim)
+    ### END YOUR SOLUTION
 
 
 def softmax(x, dim=1):
+    ### BEGIN YOUR SOLUTION
     new_shape = list(x.shape)
     new_shape[dim] = 1
     new_shape = tuple(new_shape)
@@ -711,64 +720,6 @@ def softmax(x, dim=1):
         logsumexp(x, axes=(dim,)), shape=new_shape
     ), shape=x.shape))
     return out
-
-
-class Cholesky(TensorOp):
-    def __init__(self):
-        pass
-
-    def compute(self, A: NDArray):
-        """
-        Cholesky decomposition, mirroring LAPACK's DPOTF2
-        """
-        ### BEGIN YOUR SOLUTION
-        import numpy.linalg as la
-        return NDArray(la.cholesky(A.numpy()), device=A.device)
-        ### END YOUR SOLUTION
-
-    @staticmethod
-    def _Phi(A):
-        """
-        Return lower-triangle of matrix and halve the diagonal
-        """
-        import numpy as np
-        A = np.tril(A)
-        A[np.diag_indices_from(A)] *= 0.5
-        return A
-
-    def gradient(self, out_grad: Tensor, node: Tensor):
-        """
-        Reverse-mode differentiation through the Cholesky decomposition
-        """
-        ### BEGIN YOUR SOLUTION
-        import numpy.linalg as la
-
-        L_bar = out_grad.realize_cached_data().numpy()
-        L = node.realize_cached_data().numpy()
-
-        P = self._Phi(L.T @ L_bar)
-        L_inv = la.inv(L)
-        A_bar = self._Phi(L_inv.T @ (P + P.T) @ L_inv)
-        A_bar = (A_bar + A_bar.T) / 2
-
-        return Tensor(A_bar, device=out_grad.device, dtype=out_grad.dtype)
-        ### END YOUR SOLUTION
-
-
-def cholesky(a):
-    ### BEGIN YOUR SOLUTION
-    if len(a.shape) == 2:
-        assert a.shape[0] == a.shape[1]
-        return Cholesky()(a)
-    else:
-        assert len(a.shape) == 3 \
-            and a.shape[1] == a.shape[2]
-        As = split(a, axis=0)
-        Ls = []
-        for A in As:
-            L = Cholesky()(A)
-            Ls.append(L)
-        return stack(Ls, axis=0)
     ### END YOUR SOLUTION
 
 
@@ -813,4 +764,127 @@ def unsqueeze(a, dim):
     shape = list(a.shape)
     new_shape = shape[:dim] + [1] + shape[dim:]
     return reshape(a, shape=tuple(new_shape))
+    ### END YOUR SOLUTION
+
+
+class Inverse(TensorOp):
+    def compute(self, A: NDArray):
+        """
+        C = inv(A)
+        """
+        ### BEGIN YOUR SOLUTION
+        import numpy.linalg as la
+        return NDArray(la.inv(A.numpy()), device=A.device)
+        ### END YOUR SOLUTION
+
+    def gradient(self, out_grad: Tensor, node: Tensor):
+        """
+        A_bar = - C.T @ C_bar @ C.T
+        """
+        ### BEGIN YOUR SOLUTION
+        return - node.transpose() @ out_grad @ node.transpose()
+        ### END YOUR SOLUTION
+
+
+def inv(a):
+    ### BEGIN YOUR SOLUTION
+    return Inverse()(a)
+    ### END YOUR SOLUTION
+
+
+class Det(TensorOp):
+    def compute(self, A: NDArray):
+        """
+        C = det(A)
+        """
+        ### BEGIN YOUR SOLUTION
+        import numpy.linalg as la
+        return NDArray(la.det(A.numpy()), device=A.device)
+        ### END YOUR SOLUTION
+
+    def gradient(self, out_grad: Tensor, node: Tensor):
+        """
+        A_bar = C_bar * C * inv(A).T
+        """
+        ### BEGIN YOUR SOLUTION
+        A = node.inputs[0]
+        return (out_grad * node).reshape(shape=(1, 1)).broadcast_to(shape=A.shape) \
+            * inv(A).transpose()
+        ### END YOUR SOLUTION
+
+
+def det(a):
+    ### BEGIN YOUR SOLUTION
+    return Det()(a)
+    ### END YOUR SOLUTION
+
+
+class Phi(TensorOp):
+    """
+    Get the lower-triangle of matrix and halve the diagonal
+    """
+    def compute(self, A: NDArray):
+        ### BEGIN YOUR SOLUTION
+        import numpy as np
+        out = np.tril(A.numpy())
+        out[np.diag_indices_from(out)] *= 0.5
+        return NDArray(out, device=A.device)
+        ### END YOUR SOLUTION
+
+    def gradient(self, out_grad: Tensor, node: Tensor):
+        ### BEGIN YOUR SOLUTION
+        import numpy as np
+        shape = out_grad.shape
+        ones = np.ones(shape)
+        mask = np.tril(ones, k=-1) + 0.5 * np.diag(np.diag(ones) * 0.5)
+        mask = Tensor(mask, device=out_grad.device, dtype=out_grad.dtype)
+        return out_grad * mask
+        ### END YOUR SOLUTION
+
+
+def phi(a):
+    ### BEGIN YOUR SOLUTION
+    return Phi()(a)
+    ### END YOUR SOLUTION
+
+
+class Cholesky(TensorOp):
+    def compute(self, A: NDArray):
+        """
+        Cholesky decomposition, mirroring LAPACK's DPOTF2
+        """
+        ### BEGIN YOUR SOLUTION
+        import numpy.linalg as la
+        return NDArray(la.cholesky(A.numpy()), device=A.device)
+        ### END YOUR SOLUTION
+
+    def gradient(self, out_grad: Tensor, node: Tensor):
+        """
+        Reverse-mode differentiation through the Cholesky decomposition
+        """
+        ### BEGIN YOUR SOLUTION
+        L_bar = out_grad
+        L = node
+        P = phi(L.T @ L_bar)
+        L_inv = inv(L)
+        A_bar = phi(L_inv.T @ (P + P.T) @ L_inv)
+        A_bar = (A_bar + A_bar.T) / 2
+        return A_bar
+        ### END YOUR SOLUTION
+
+
+def cholesky(a):
+    ### BEGIN YOUR SOLUTION
+    if len(a.shape) == 2:
+        assert a.shape[0] == a.shape[1]
+        return Cholesky()(a)
+    else:
+        assert len(a.shape) == 3 \
+            and a.shape[1] == a.shape[2]
+        As = split(a, axis=0)
+        Ls = []
+        for A in As:
+            L = Cholesky()(A)
+            Ls.append(L)
+        return stack(Ls, axis=0)
     ### END YOUR SOLUTION

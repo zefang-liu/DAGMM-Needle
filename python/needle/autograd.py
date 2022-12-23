@@ -357,6 +357,12 @@ class Tensor(Value):
     def transpose(self, axes=None):
         return needle.ops.Transpose(axes)(self)
 
+    @property
+    def T(self):
+        ### BEGIN YOUR SOLUTION
+        return self.transpose()
+        ### END YOUR SOLUTION
+
     def squeeze(self, dim=None):
         ### BEGIN YOUR SOLUTION
         return needle.ops.squeeze(self, dim=dim)

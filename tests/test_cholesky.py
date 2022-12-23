@@ -274,6 +274,70 @@ def test_op_bmm(A_shape, B_shape, backward, device):
         assert err_grad < 1e-2, "input grads match"
 
 
+op_inv_params = [
+    (3, 3), (4, 4),
+]
+@pytest.mark.parametrize("A_shape", op_inv_params)
+@pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
+@pytest.mark.parametrize("backward", [False, True], ids=["forward", "backward"])
+def test_op_inv(A_shape, backward, device):
+    np.random.seed(0)
+    A_array = np.random.randn(*A_shape)
+
+    A = ndl.Tensor(A_array, device=device)
+    y = ndl.inv(A)
+    y_sum = y.sum()
+
+    if backward:
+        y_sum.backward()
+
+    A_tensor = torch.Tensor(A_array).float()
+    A_tensor.requires_grad = True
+    y_tensor = torch.inverse(A_tensor)
+    y_sum_tensor = y_tensor.sum()
+
+    if backward:
+        y_sum_tensor.backward()
+
+    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
+
+    if backward:
+        err_grad = np.linalg.norm(A_tensor.grad.numpy() - A.grad.numpy())
+        assert err_grad < 1e-2, "input grads match"
+
+
+op_det_params = [
+    (3, 3), (4, 4),
+]
+@pytest.mark.parametrize("A_shape", op_det_params)
+@pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
+@pytest.mark.parametrize("backward", [False, True], ids=["forward", "backward"])
+def test_op_det(A_shape, backward, device):
+    np.random.seed(0)
+    A_array = np.random.randn(*A_shape)
+
+    A = ndl.Tensor(A_array, device=device)
+    y = ndl.det(A)
+
+    if backward:
+        y.backward()
+
+    A_tensor = torch.Tensor(A_array).float()
+    A_tensor.requires_grad = True
+    y_tensor = torch.det(A_tensor)
+
+    if backward:
+        y_tensor.backward()
+
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
+    assert err_out < 1e-2, "outputs match %s, %s" % (y, y_tensor)
+
+    if backward:
+        err_grad = np.linalg.norm(A_tensor.grad.numpy() - A.grad.numpy())
+        assert err_grad < 1e-2, "input grads match"
+
+
 op_cholesky_params = [
     (4, 4),
     (2, 4, 4),
