@@ -357,6 +357,16 @@ class Tensor(Value):
     def transpose(self, axes=None):
         return needle.ops.Transpose(axes)(self)
 
+    def squeeze(self, dim=None):
+        ### BEGIN YOUR SOLUTION
+        return needle.ops.squeeze(self, dim=dim)
+        ### END YOUR SOLUTION
+
+    def unsqueeze(self, dim):
+        ### BEGIN YOUR SOLUTION
+        return needle.ops.unsqueeze(self, dim=dim)
+        ### END YOUR SOLUTION
+
     __radd__ = __add__
     __rmul__ = __mul__
     __rmatmul__ = __matmul__

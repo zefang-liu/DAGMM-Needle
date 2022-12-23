@@ -756,4 +756,61 @@ class Cholesky(TensorOp):
 
 
 def cholesky(a):
-    return Cholesky()(a)
+    ### BEGIN YOUR SOLUTION
+    if len(a.shape) == 2:
+        assert a.shape[0] == a.shape[1]
+        return Cholesky()(a)
+    else:
+        assert len(a.shape) == 3 \
+            and a.shape[1] == a.shape[2]
+        As = split(a, axis=0)
+        Ls = []
+        for A in As:
+            L = Cholesky()(A)
+            Ls.append(L)
+        return stack(Ls, axis=0)
+    ### END YOUR SOLUTION
+
+
+def bmm(a, b):
+    ### BEGIN YOUR SOLUTION
+    assert len(a.shape) == 3 and len(b.shape) == 3 \
+        and a.shape[0] == b.shape[0]
+
+    As = split(a, axis=0)
+    Bs = split(b, axis=0)
+    Cs = []
+
+    for A, B in zip(As, Bs):
+        C = MatMul()(A, B)
+        Cs.append(C)
+
+    return stack(Cs, axis=0)
+    ### END YOUR SOLUTION
+
+
+def squeeze(a, dim=None):
+    ### BEGIN YOUR SOLUTION
+    shape = list(a.shape)
+
+    if dim:
+        if shape[dim] == 1:
+            new_shape = shape[:dim] + shape[dim + 1:]
+        else:
+            new_shape = shape
+    else:
+        new_shape = []
+        for size in shape:
+            if size != 1:
+                new_shape.append(size)
+
+    return reshape(a, shape=tuple(new_shape))
+    ### END YOUR SOLUTION
+
+
+def unsqueeze(a, dim):
+    ### BEGIN YOUR SOLUTION
+    shape = list(a.shape)
+    new_shape = shape[:dim] + [1] + shape[dim:]
+    return reshape(a, shape=tuple(new_shape))
+    ### END YOUR SOLUTION
