@@ -64,22 +64,22 @@ class DAGMM(nn.Module):
         _, Z = z.shape
 
         gamma_sum = gamma.sum(axes=0).reshape(shape=(K, 1))  # (K, 1)
-        phi = gamma_sum / N  # (K, 1)
+        phi = gamma_sum.squeeze() / N  # (K,)
         mu = gamma.T @ z / gamma_sum.broadcast_to(shape=(K, Z))  # (K, Z)
         z_mean = z.reshape(shape=(N, 1, Z)).broadcast_to(shape=(N, K, Z)) \
             - mu.reshape(shape=(1, K, Z)).broadcast_to(shape=(N, K, Z))  # (N, K, Z)
         z_mean = z_mean.reshape(shape=(N, K, Z, 1))  # (N, K, Z, 1)
-        Sigma = (
+        sigma = (
             gamma.reshape(shape=(N, K, 1, 1)).broadcast_to(shape=(N, K, Z, Z))
             * ndl.bmm(z_mean, z_mean.T)
         ).sum(axes=0) / gamma_sum.reshape(
             shape=(K, 1, 1)).broadcast_to(shape=(K, Z, Z))  # (K, Z, Z)
 
-        return phi, mu, Sigma
+        return phi, mu, sigma
         ### END YOUR SOLUTION
 
     @staticmethod
-    def get_sample_energy(z, phi, mu, Sigma):
+    def get_sample_energy(z, phi, mu, sigma):
         ### BEGIN YOUR SOLUTION
         from numpy import pi
         N, Z = z.shape
@@ -88,17 +88,17 @@ class DAGMM(nn.Module):
         z_mean = z.reshape(shape=(N, 1, Z)).broadcast_to(shape=(N, K, Z)) \
             - mu.reshape(shape=(1, K, Z)).broadcast_to(shape=(N, K, Z))  # (N, K, Z)
         z_mean = z_mean.reshape(shape=(N, K, Z, 1))  # (N, K, Z, 1)
-        Sigma_inv = ndl.inv(Sigma)  # (K, Z, Z)
-        Sigma_inv = Sigma_inv.reshape(shape=(1, K, Z, Z)).broadcast_to(
+        sigma_inv = ndl.inv(sigma)  # (K, Z, Z)
+        sigma_inv = sigma_inv.reshape(shape=(1, K, Z, Z)).broadcast_to(
             shape=(N, K, Z, Z))  # (N, K, Z, Z)
-        Sigma_det = ndl.det(Sigma * 2 * pi).reshape(shape=(1, K)).broadcast_to(
+        sigma_det = ndl.det(sigma * 2 * pi).reshape(shape=(1, K)).broadcast_to(
             shape=(N, K))  # (N, K)
         phi = phi.reshape(shape=(1, K)).broadcast_to(shape=(N, K))  # (N, K)
 
         E = -ndl.log((
             phi * (
-                ndl.exp(ndl.bmm(ndl.bmm(z_mean.T, Sigma_inv), z_mean).squeeze() * (-0.5))
-                / (Sigma_det ** 0.5)
+                ndl.exp(ndl.bmm(ndl.bmm(z_mean.T, sigma_inv), z_mean).squeeze() * (-0.5))
+                / (sigma_det ** 0.5)
             )
         ).sum(axes=1))  # (N,)
         return E
@@ -118,17 +118,17 @@ class DAGMM(nn.Module):
         ### END YOUR SOLUTION
 
     @staticmethod
-    def get_penalty_loss(Sigma):
+    def get_penalty_loss(sigma):
         ### BEGIN YOUR SOLUTION
-        return ndl.diagonal(Sigma ** (-1)).sum()
+        return ndl.diagonal(sigma ** (-1)).sum()
         ### END YOUR SOLUTION
 
-    def get_loss(self, x, x_r, z, phi, mu, Sigma):
+    def get_loss(self, x, x_r, z, phi, mu, sigma):
         ### BEGIN YOUR SOLUTION
-        E = self.get_sample_energy(z, phi, mu, Sigma)
+        E = self.get_sample_energy(z, phi, mu, sigma)
         reconstruction_loss = self.get_reconstruction_loss(x, x_r)
         sample_energy_loss = self.get_sample_energy_loss(E)
-        penalty_loss = self.get_penalty_loss(Sigma)
+        penalty_loss = self.get_penalty_loss(sigma)
         loss = reconstruction_loss + self.lambda1 * sample_energy_loss \
             + self.lambda2 * penalty_loss
         return loss
