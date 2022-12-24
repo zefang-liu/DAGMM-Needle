@@ -22,15 +22,22 @@ def test_dagmm(N, X, Z, K, device):
 
     x_array = np.random.randn(N, X)
     x = ndl.Tensor(x_array, device=device)
-    z_c, x_r, z, gamma = model(x)
 
+    z_c, x_r, z, gamma = model(x)
     assert z_c.shape == (N, 1)
     assert x_r.shape == (N, X)
     assert z.shape == (N, Z)
     assert gamma.shape == (N, K)
 
     phi, mu, Sigma = model.get_gmm_parameters(gamma, z)
-
     assert phi.shape == (K, 1)
     assert mu.shape == (K, Z)
     assert Sigma.shape == (K, Z, Z)
+
+    E = model.get_sample_energy(z, phi, mu, Sigma)
+    assert E.shape == (N,)
+
+    reconstruction_loss = model.get_reconstruction_loss(x, x_r)
+    sample_energy_loss = model.get_sample_energy_loss(E)
+    penalty_loss = model.get_penalty_loss(Sigma)
+    loss = model.get_loss(x, x_r, z, phi, mu, Sigma)

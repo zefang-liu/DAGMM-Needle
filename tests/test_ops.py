@@ -41,7 +41,7 @@ def test_op_squeeze(x_shape, dim, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
@@ -78,7 +78,7 @@ def test_op_unsqueeze(x_shape, dim, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
@@ -113,7 +113,7 @@ def test_op_norm(x_shape, dim, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
@@ -152,7 +152,7 @@ def test_op_cosine_similarity(x_shape, dim, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
@@ -191,7 +191,7 @@ def test_op_pairwise_distance(x_shape, dim, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
@@ -227,7 +227,7 @@ def test_op_softmax(x_shape, dim, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
@@ -265,7 +265,7 @@ def test_op_bmm(A_shape, B_shape, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
@@ -275,7 +275,8 @@ def test_op_bmm(A_shape, B_shape, backward, device):
 
 
 op_inv_params = [
-    (3, 3), (4, 4),
+    (4, 4),
+    (2, 4, 4),
 ]
 @pytest.mark.parametrize("A_shape", op_inv_params)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
@@ -299,7 +300,7 @@ def test_op_inv(A_shape, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
@@ -308,7 +309,8 @@ def test_op_inv(A_shape, backward, device):
 
 
 op_det_params = [
-    (3, 3), (4, 4),
+    (4, 4),
+    (2, 4, 4),
 ]
 @pytest.mark.parametrize("A_shape", op_det_params)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
@@ -319,19 +321,54 @@ def test_op_det(A_shape, backward, device):
 
     A = ndl.Tensor(A_array, device=device)
     y = ndl.det(A)
+    y_sum = y.sum()
 
     if backward:
-        y.backward()
+        y_sum.backward()
 
     A_tensor = torch.Tensor(A_array).float()
     A_tensor.requires_grad = True
     y_tensor = torch.det(A_tensor)
+    y_sum_tensor = y_tensor.sum()
 
     if backward:
-        y_tensor.backward()
+        y_sum_tensor.backward()
 
     err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
-    assert err_out < 1e-2, "outputs match %s, %s" % (y, y_tensor)
+    assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
+
+    if backward:
+        err_grad = np.linalg.norm(A_tensor.grad.numpy() - A.grad.numpy())
+        assert err_grad < 1e-2, "input grads match"
+
+
+op_diagonal_params = [
+    (4, 4),
+]
+@pytest.mark.parametrize("A_shape", op_diagonal_params)
+@pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
+@pytest.mark.parametrize("backward", [False, True], ids=["forward", "backward"])
+def test_op_diagonal(A_shape, backward, device):
+    np.random.seed(0)
+    A_array = np.random.randn(*A_shape)
+
+    A = ndl.Tensor(A_array, device=device)
+    y = ndl.diagonal(A)
+    y_sum = y.sum()
+
+    if backward:
+        y_sum.backward()
+
+    A_tensor = torch.Tensor(A_array).float()
+    A_tensor.requires_grad = True
+    y_tensor = torch.diag(torch.diag(A_tensor))
+    y_sum_tensor = y_tensor.sum()
+
+    if backward:
+        y_sum_tensor.backward()
+
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
+    assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:
         err_grad = np.linalg.norm(A_tensor.grad.numpy() - A.grad.numpy())
@@ -369,7 +406,7 @@ def test_op_cholesky(A_shape, backward, device):
     if backward:
         y_sum_tensor.backward()
 
-    err_out = np.linalg.norm(y_sum_tensor.detach().numpy() - y_sum.numpy())
+    err_out = np.linalg.norm(y_tensor.detach().numpy() - y.numpy())
     assert err_out < 1e-2, "outputs match %s, %s" % (y_sum, y_sum_tensor)
 
     if backward:

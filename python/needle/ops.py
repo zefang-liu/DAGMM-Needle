@@ -723,23 +723,6 @@ def softmax(x, dim=1):
     ### END YOUR SOLUTION
 
 
-def bmm(a, b):
-    ### BEGIN YOUR SOLUTION
-    assert len(a.shape) == 3 and len(b.shape) == 3 \
-        and a.shape[0] == b.shape[0]
-
-    As = split(a, axis=0)
-    Bs = split(b, axis=0)
-    Cs = []
-
-    for A, B in zip(As, Bs):
-        C = MatMul()(A, B)
-        Cs.append(C)
-
-    return stack(Cs, axis=0)
-    ### END YOUR SOLUTION
-
-
 def squeeze(a, dim=None):
     ### BEGIN YOUR SOLUTION
     shape = list(a.shape)
@@ -767,6 +750,24 @@ def unsqueeze(a, dim):
     ### END YOUR SOLUTION
 
 
+def bmm(a, b):
+    ### BEGIN YOUR SOLUTION
+    assert len(a.shape) == len(b.shape)
+
+    if len(a.shape) == 2:
+        return MatMul()(a, b)
+    else:
+        assert len(a.shape) > 2 and a.shape[0] == b.shape[0]
+        As = split(a, axis=0)
+        Bs = split(b, axis=0)
+        Cs = []
+        for A, B in zip(As, Bs):
+            C = bmm(A, B)
+            Cs.append(C)
+        return stack(Cs, axis=0)
+    ### END YOUR SOLUTION
+
+
 class Inverse(TensorOp):
     def compute(self, A: NDArray):
         """
@@ -788,7 +789,7 @@ class Inverse(TensorOp):
 
 def inv(a):
     ### BEGIN YOUR SOLUTION
-    return Inverse()(a)
+    return _batch_unary_op(Inverse(), a)
     ### END YOUR SOLUTION
 
 
@@ -815,7 +816,27 @@ class Det(TensorOp):
 
 def det(a):
     ### BEGIN YOUR SOLUTION
-    return Det()(a)
+    return _batch_unary_op(Det(), a)
+    ### END YOUR SOLUTION
+
+
+class Diagonal(TensorOp):
+    def compute(self, A: NDArray):
+        ### BEGIN YOUR SOLUTION
+        return A.diagonal()
+        ### END YOUR SOLUTION
+
+    def gradient(self, out_grad: Tensor, node: Tensor):
+        ### BEGIN YOUR SOLUTION
+        mask = array_api.eye(out_grad.shape[0])
+        mask = Tensor(mask, device=out_grad.device, dtype=out_grad.dtype)
+        return out_grad * mask
+        ### END YOUR SOLUTION
+
+
+def diagonal(a):
+    ### BEGIN YOUR SOLUTION
+    return _batch_unary_op(Diagonal(), a)
     ### END YOUR SOLUTION
 
 
@@ -844,7 +865,7 @@ class Phi(TensorOp):
 
 def phi(a):
     ### BEGIN YOUR SOLUTION
-    return Phi()(a)
+    return _batch_unary_op(Phi(), a)
     ### END YOUR SOLUTION
 
 
@@ -873,18 +894,22 @@ class Cholesky(TensorOp):
         ### END YOUR SOLUTION
 
 
-def cholesky(a):
+def _batch_unary_op(op: TensorOp, a: Tensor):
     ### BEGIN YOUR SOLUTION
     if len(a.shape) == 2:
-        assert a.shape[0] == a.shape[1]
-        return Cholesky()(a)
+        return op(a)
     else:
-        assert len(a.shape) == 3 \
-            and a.shape[1] == a.shape[2]
+        assert len(a.shape) > 2
         As = split(a, axis=0)
-        Ls = []
+        Bs = []
         for A in As:
-            L = Cholesky()(A)
-            Ls.append(L)
-        return stack(Ls, axis=0)
+            B = _batch_unary_op(op, A)
+            Bs.append(B)
+        return stack(Bs, axis=0)
+    ### END YOUR SOLUTION
+
+
+def cholesky(a):
+    ### BEGIN YOUR SOLUTION
+    return _batch_unary_op(Cholesky(), a)
     ### END YOUR SOLUTION

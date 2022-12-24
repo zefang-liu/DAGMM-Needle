@@ -54,6 +54,13 @@ class BackendDevice:
         arr.fill(fill_value)
         return arr
 
+    def eye(self, n, dtype="float32"):
+        ### BEGIN YOUR SOLUTION
+        dtype = "float32" if dtype is None else dtype
+        assert dtype == "float32"
+        return NDArray(np.eye(n, dtype=dtype), device=self)
+        ### END YOUR SOLUTION
+
 
 def cuda():
     """Return cuda device"""
@@ -328,7 +335,6 @@ class NDArray:
         ### END YOUR SOLUTION
 
     ### Get and set elements
-
     def process_slice(self, sl, dim):
         """ Convert a slice to an explicit start/stop/step """
         start, stop, step = sl.start, sl.stop, sl.step
@@ -430,7 +436,6 @@ class NDArray:
             )
 
     ### Collection of elementwise and scalar function: add, multiply, boolean, etc
-
     def ewise_or_scalar(self, other, ewise_func, scalar_func):
         """Run either an elementwise or scalar version of a function,
         depending on whether "other" is an NDArray or scalar
@@ -501,7 +506,6 @@ class NDArray:
         return 1 - (self > other)
 
     ### Elementwise functions
-
     def log(self):
         out = NDArray.make(self.shape, device=self.device)
         self.device.ewise_log(self.compact()._handle, out._handle)
@@ -580,7 +584,6 @@ class NDArray:
             view = self.compact().reshape((1,) * (self.ndim - 1) + (prod(self.shape),))
             out = NDArray.make((1,) * (self.ndim if keepdims else 1), device=self.device)
 
-
         else:
             if isinstance(axis, (tuple, list)):
                 assert len(axis) == 1, "Only support reduction over a single axis"
@@ -607,7 +610,6 @@ class NDArray:
         self.device.reduce_max(view.compact()._handle, out._handle, view.shape[-1])
         return out
 
-
     def flip(self, axes):
         """
         Flip this ndarray along the specified axes.
@@ -626,7 +628,6 @@ class NDArray:
             device=self._device, handle=self._handle,
             offset=new_offset).compact()
         ### END YOUR SOLUTION
-
 
     def pad(self, axes):
         """
@@ -655,6 +656,12 @@ class NDArray:
         return out
         ### END YOUR SOLUTION
 
+    def diagonal(self):
+        ### BEGIN YOUR SOLUTION
+        assert self.ndim == 2 and self.shape[0] == self.shape[1]
+        out = eye(self.shape[0], dtype=self.dtype, device=self._device)
+        return out * self
+        ### END YOUR SOLUTION
 
 
 def array(a, dtype="float32", device=None):
@@ -707,6 +714,11 @@ def summation(a, axis=None, keepdims=False):
 
 
 ### BEGIN YOUR SOLUTION
+def eye(n, dtype="float32", device=None):
+    device = device if device is not None else default_device()
+    return device.eye(n, dtype)
+
+
 def sum(a, axis=None, keepdims=False):
     return a.sum(axis=axis, keepdims=keepdims)
 
