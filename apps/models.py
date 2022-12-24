@@ -131,5 +131,5 @@ class DAGMM(nn.Module):
         penalty_loss = self.get_penalty_loss(sigma)
         loss = reconstruction_loss + self.lambda1 * sample_energy_loss \
             + self.lambda2 * penalty_loss
-        return loss
+        return loss, (reconstruction_loss, sample_energy_loss, penalty_loss)
         ### END YOUR SOLUTION

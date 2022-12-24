@@ -129,7 +129,5 @@ def test_model_dagmm(N, X, Z, K, device):
     E = model.get_sample_energy(z, phi, mu, sigma)
     assert E.shape == (N,)
 
-    reconstruction_loss = model.get_reconstruction_loss(x, x_r)
-    sample_energy_loss = model.get_sample_energy_loss(E)
-    penalty_loss = model.get_penalty_loss(sigma)
-    loss = model.get_loss(x, x_r, z, phi, mu, sigma)
+    loss, loss_items = model.get_loss(x, x_r, z, phi, mu, sigma)
+    reconstruction_loss, sample_energy_loss, penalty_loss = loss_items
