@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from .autograd import Tensor
 import os
 import pickle
@@ -426,18 +427,61 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     ### END YOUR SOLUTION
 
 
+def parse_kdd_cup():
+    """
+    Load and preprocess the KDD Cup 1999 Dataset
+    """
+    ### BEGIN YOUR SOLUTION
+    from sklearn.datasets import fetch_kddcup99
+    data = fetch_kddcup99(shuffle=False, percent10=True, as_frame=True)
+
+    df_kdd_cup = data.frame
+    df_kdd_cup.loc[df_kdd_cup.labels != b'normal.', 'labels'] = 0
+    df_kdd_cup.loc[df_kdd_cup.labels == b'normal.', 'labels'] = 1
+    df_kdd_cup = df_kdd_cup.convert_dtypes()
+
+    object_columns = df_kdd_cup.dtypes[df_kdd_cup.dtypes == 'object'].index
+    one_hot_tables = []
+    for object_column in object_columns:
+        one_hot_tables.append(pd.get_dummies(df_kdd_cup[object_column]))
+
+    df_numerics = pd.concat([*one_hot_tables, df_kdd_cup.drop(columns=object_columns)], axis=1)
+    features = df_numerics.drop(columns='labels')
+    labels = df_numerics.labels
+
+    X = ((features - features.min()) / (features.max() - features.min())).values.astype('float32')
+    y = labels.values.astype('uint8')
+    return X, y
+    ### END YOUR SOLUTION
+
+
 class KDDCUPDataset(Dataset):
-    def __init__(self):
+    """
+    KDD Cup 1999 Dataset
+    """
+    def __init__(self, train=True, train_size=0.8):
         ### BEGIN YOUR SOLUTION
         super().__init__()
+
+        from sklearn.model_selection import train_test_split
+        X, y = parse_kdd_cup()
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, train_size=train_size, shuffle=True, random_state=0)
+
+        if train:
+            self.X = X_train
+            self.y = y_train
+        else:
+            self.X = X_test
+            self.y = y_test
         ### END YOUR SOLUTION
 
     def __getitem__(self, index) -> object:
         ### BEGIN YOUR SOLUTION
-        pass
+        return self.X[index], self.y[index]
         ### END YOUR SOLUTION
 
     def __len__(self) -> int:
         ### BEGIN YOUR SOLUTION
-        pass
+        return len(self.y)
         ### END YOUR SOLUTION

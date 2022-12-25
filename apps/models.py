@@ -7,13 +7,13 @@ np.random.seed(0)
 
 
 class DAGMM(nn.Module):
-    def __init__(self, lambda1=0.1, lambda2=0.005, device=None, dtype="float32"):
+    def __init__(self, x_dim=118, gamma_dim=4, lambda1=0.1, lambda2=0.005, device=None, dtype="float32"):
         ### BEGIN YOUR SOLUTION
         self.lambda1 = lambda1
         self.lambda2 = lambda2
 
         self.encoder = nn.Sequential(
-            nn.Linear(120, 60, device=device, dtype=dtype),
+            nn.Linear(x_dim, 60, device=device, dtype=dtype),
             nn.Tanh(),
             nn.Linear(60, 30, device=device, dtype=dtype),
             nn.Tanh(),
@@ -29,14 +29,14 @@ class DAGMM(nn.Module):
             nn.Tanh(),
             nn.Linear(30, 60, device=device, dtype=dtype),
             nn.Tanh(),
-            nn.Linear(60, 120, device=device, dtype=dtype),
+            nn.Linear(60, x_dim, device=device, dtype=dtype),
         )
 
         self.estimation = nn.Sequential(
             nn.Linear(3, 10, device=device, dtype=dtype),
             nn.Tanh(),
             nn.Dropout(p=0.5),
-            nn.Linear(10, 4, device=device, dtype=dtype),
+            nn.Linear(10, gamma_dim, device=device, dtype=dtype),
             nn.Softmax(),
         )
         ### END YOUR SOLUTION

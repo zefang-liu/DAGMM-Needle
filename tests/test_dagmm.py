@@ -109,7 +109,7 @@ def test_sample_energy(N, X, Z, K, device):
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_model_dagmm(N, X, Z, K, device):
     np.random.seed(0)
-    model = DAGMM(device=device)
+    model = DAGMM(x_dim=X, gamma_dim=K, device=device)
 
     x_array = np.random.randn(N, X)
     x = ndl.Tensor(x_array, device=device)
