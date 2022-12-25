@@ -95,13 +95,13 @@ class DAGMM(nn.Module):
             shape=(N, K))  # (N, K)
         phi = phi.reshape(shape=(1, K)).broadcast_to(shape=(N, K))  # (N, K)
 
-        E = -ndl.log((
+        energy = -ndl.log((
             phi * (
                 ndl.exp(ndl.bmm(ndl.bmm(z_mean.T, sigma_inv), z_mean).squeeze() * (-0.5))
                 / (sigma_det ** 0.5)
             )
         ).sum(axes=1))  # (N,)
-        return E
+        return energy
         ### END YOUR SOLUTION
 
     @staticmethod
@@ -125,9 +125,9 @@ class DAGMM(nn.Module):
 
     def get_loss(self, x, x_r, z, phi, mu, sigma):
         ### BEGIN YOUR SOLUTION
-        E = self.get_sample_energy(z, phi, mu, sigma)
+        energy = self.get_sample_energy(z, phi, mu, sigma)
         reconstruction_loss = self.get_reconstruction_loss(x, x_r)
-        sample_energy_loss = self.get_sample_energy_loss(E)
+        sample_energy_loss = self.get_sample_energy_loss(energy)
         penalty_loss = self.get_penalty_loss(sigma)
         loss = reconstruction_loss + self.lambda1 * sample_energy_loss \
             + self.lambda2 * penalty_loss

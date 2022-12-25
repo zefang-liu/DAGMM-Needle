@@ -62,20 +62,19 @@ def test_gmm_parameters(N, X, Z, K, device):
 
 
 def get_sample_energy(phi, mu, sigma, zi, K):
-    e = torch.tensor(0.0)
-    cov_eps = torch.eye(mu.shape[1]) * (1e-12)
+    energy = torch.tensor(0.0)
 
     for k in range(K):
-        miu_k = mu[k].unsqueeze(1)
-        d_k = zi - miu_k
+        mu_k = mu[k].unsqueeze(1)
+        zi_mean = zi - mu_k
+        sigma_inv = torch.inverse(sigma[k])
 
-        inv_cov = torch.inverse(sigma[k] + cov_eps)
-        e_k = torch.exp(-0.5 * d_k.T @ inv_cov @ d_k)
-        e_k = e_k / torch.sqrt(torch.abs(torch.det(2 * np.pi * sigma[k])))
-        e_k = e_k * phi[k]
-        e += e_k.squeeze()
+        energy_k = torch.exp(-0.5 * zi_mean.T @ sigma_inv @ zi_mean)
+        energy_k = energy_k / torch.sqrt(torch.det(2 * np.pi * sigma[k]))
+        energy_k = energy_k * phi[k]
+        energy += energy_k.squeeze()
 
-    return -torch.log(e)
+    return -torch.log(energy)
 
 
 @pytest.mark.parametrize("N, X, Z, K", dagmm_params)
@@ -88,22 +87,22 @@ def test_sample_energy(N, X, Z, K, device):
     gamma = ndl.Tensor(gamma_array, device=device)
     z = ndl.Tensor(z_array, device=device)
     phi, mu, sigma = DAGMM.get_gmm_parameters(gamma, z)
-    E = DAGMM.get_sample_energy(z, phi, mu, sigma)
+    energy = DAGMM.get_sample_energy(z, phi, mu, sigma)
 
     gamma_tensor = torch.Tensor(gamma_array).float()
     z_tensor = torch.Tensor(z_array).float()
     phi_tensor, mu_tensor, sigma_tensor = get_gmm_parameters(gamma_tensor, z_tensor)
-    E_tensor = []
+    energy_tensor = []
 
     for i in range(z_tensor.shape[0]):
         zi_tensor = z_tensor[i].unsqueeze(1)
         ei_tensor = get_sample_energy(phi_tensor, mu_tensor, sigma_tensor, zi_tensor, K)
-        E_tensor.append(ei_tensor)
+        energy_tensor.append(ei_tensor)
 
-    E_tensor = torch.stack(E_tensor, dim=0)
+    energy_tensor = torch.stack(energy_tensor, dim=0)
 
-    err_E = np.linalg.norm(E_tensor.detach().numpy() - E.numpy())
-    assert err_E < 1e-2, "phi match %s, %s" % (E, E_tensor)
+    err_energy = np.linalg.norm(energy_tensor.detach().numpy() - energy.numpy())
+    assert err_energy < 1e-2, "energy match %s, %s" % (energy, energy_tensor)
 
 
 @pytest.mark.parametrize("N, X, Z, K", dagmm_params)
@@ -126,8 +125,8 @@ def test_model_dagmm(N, X, Z, K, device):
     assert mu.shape == (K, Z)
     assert sigma.shape == (K, Z, Z)
 
-    E = model.get_sample_energy(z, phi, mu, sigma)
-    assert E.shape == (N,)
+    energy = model.get_sample_energy(z, phi, mu, sigma)
+    assert energy.shape == (N,)
 
     loss, loss_items = model.get_loss(x, x_r, z, phi, mu, sigma)
     reconstruction_loss, sample_energy_loss, penalty_loss = loss_items
