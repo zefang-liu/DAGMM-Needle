@@ -465,8 +465,8 @@ def parse_kdd_cup():
     labels_normal = df_normal.labels
     labels_abnormal = df_abnormal.labels
 
-    X_normal = ((features_normal - features.min()) / (features.max() - features.min())).values.astype('float32')
-    X_abnormal = ((features_abnormal - features.min()) / (features.max() - features.min())).values.astype('float32')
+    X_normal = features_normal.values.astype('float32')
+    X_abnormal = features_abnormal.values.astype('float32')
     y_normal = labels_normal.values.astype('uint8')
     y_abnormal = labels_abnormal.values.astype('uint8')
     return X_normal, X_abnormal, y_normal, y_abnormal

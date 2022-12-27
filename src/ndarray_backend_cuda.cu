@@ -410,6 +410,17 @@ void EwiseTanh(const CudaArray& a, CudaArray* out) {
   CudaDims dim = CudaOneDim(out->size);
   EwiseTanhKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size);
 }
+
+__global__ void EwiseAbsKernel(const scalar_t* a, scalar_t* out, size_t size) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) out[gid] = abs(a[gid]);
+}
+
+void EwiseAbs(const CudaArray& a, CudaArray* out) {
+  CudaDims dim = CudaOneDim(out->size);
+  EwiseAbsKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size);
+}
+
 /// END YOUR SOLUTION
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -596,6 +607,7 @@ PYBIND11_MODULE(ndarray_backend_cuda, m) {
   m.def("ewise_log", EwiseLog);
   m.def("ewise_exp", EwiseExp);
   m.def("ewise_tanh", EwiseTanh);
+  m.def("ewise_abs", EwiseAbs);
 
   m.def("matmul", Matmul);
 

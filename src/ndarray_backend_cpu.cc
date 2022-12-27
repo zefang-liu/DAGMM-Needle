@@ -285,6 +285,12 @@ void EwiseTanh(const AlignedArray& a, AlignedArray* out) {
     out->ptr[i] = tanh(a.ptr[i]);
   }
 }
+
+void EwiseAbs(const AlignedArray& a, AlignedArray* out) {
+  for (size_t i = 0; i < a.size; i++) {
+    out->ptr[i] = abs(a.ptr[i]);
+  }
+}
 /// END YOUR SOLUTION
 
 void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m, uint32_t n,
@@ -492,6 +498,7 @@ PYBIND11_MODULE(ndarray_backend_cpu, m) {
   m.def("ewise_log", EwiseLog);
   m.def("ewise_exp", EwiseExp);
   m.def("ewise_tanh", EwiseTanh);
+  m.def("ewise_abs", EwiseAbs);
 
   m.def("matmul", Matmul);
   m.def("matmul_tiled", MatmulTiled);

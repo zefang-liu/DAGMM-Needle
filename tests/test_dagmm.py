@@ -8,12 +8,13 @@ from apps.models import DAGMM
 from scipy.special import softmax
 np.random.seed(0)
 
+_ERROR_THRESHOLD = 1e-4
+_DEVICES = [ndl.cpu(), pytest.param(
+    ndl.cuda(), marks=pytest.mark.skipif(not ndl.cuda().enabled(), reason="No GPU"))]
+
 dagmm_params = [
     (16, 120, 3, 4),
 ]
-
-_DEVICES = [ndl.cpu(), pytest.param(
-    ndl.cuda(), marks=pytest.mark.skipif(not ndl.cuda().enabled(), reason="No GPU"))]
 
 
 def get_gmm_parameters(gamma, z):
@@ -52,13 +53,13 @@ def test_gmm_parameters(N, X, Z, K, device):
     phi_tensor, mu_tensor, sigma_tensor = get_gmm_parameters(gamma_tensor, z_tensor)
 
     err_phi = np.linalg.norm(phi_tensor.detach().numpy() - phi.numpy())
-    assert err_phi < 1e-2, "phi match %s, %s" % (phi, phi_tensor)
+    assert err_phi < _ERROR_THRESHOLD, "phi match %s, %s" % (phi, phi_tensor)
 
     err_mu = np.linalg.norm(mu_tensor.detach().numpy() - mu.numpy())
-    assert err_mu < 1e-2, "mu match %s, %s" % (mu, phi_tensor)
+    assert err_mu < _ERROR_THRESHOLD, "mu match %s, %s" % (mu, phi_tensor)
 
     err_sigma = np.linalg.norm(sigma_tensor.detach().numpy() - sigma.numpy())
-    assert err_sigma < 1e-2, "sigma match %s, %s" % (sigma, sigma_tensor)
+    assert err_sigma < _ERROR_THRESHOLD, "sigma match %s, %s" % (sigma, sigma_tensor)
 
 
 def get_sample_energy(phi, mu, sigma, zi, K):
@@ -102,7 +103,7 @@ def test_sample_energy(N, X, Z, K, device):
     energy_tensor = torch.stack(energy_tensor, dim=0)
 
     err_energy = np.linalg.norm(energy_tensor.detach().numpy() - energy.numpy())
-    assert err_energy < 1e-2, "energy match %s, %s" % (energy, energy_tensor)
+    assert err_energy < _ERROR_THRESHOLD, "energy match %s, %s" % (energy, energy_tensor)
 
 
 @pytest.mark.parametrize("N, X, Z, K", dagmm_params)

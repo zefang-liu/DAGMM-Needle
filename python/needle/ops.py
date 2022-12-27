@@ -750,6 +750,27 @@ def unsqueeze(a, dim):
     ### END YOUR SOLUTION
 
 
+class Abs(TensorOp):
+    def compute(self, a: NDArray):
+        ### BEGIN YOUR SOLUTION
+        return array_api.abs(a)
+        ### END YOUR SOLUTION
+
+    def gradient(self, out_grad: Tensor, node: Tensor):
+        ### BEGIN YOUR SOLUTION
+        import numpy as np
+        a = node.inputs[0].realize_cached_data().numpy()
+        mask = np.ones_like(a)
+        mask[a < 0] = -1
+        mask = Tensor(mask, device=out_grad.device, dtype=out_grad.dtype)
+        return out_grad * mask
+        ### END YOUR SOLUTION
+
+
+def abs(a):
+    return Abs()(a)
+
+
 def bmm(a, b):
     ### BEGIN YOUR SOLUTION
     assert len(a.shape) == len(b.shape)
