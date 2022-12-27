@@ -459,7 +459,6 @@ def parse_kdd_cup():
     df_numerics = pd.concat([*one_hot_tables, df_kdd_cup.drop(columns=object_columns)], axis=1)
     df_normal = df_numerics[df_numerics.labels == 0]
     df_abnormal = df_numerics[df_numerics.labels == 1]
-    features = df_numerics.drop(columns='labels')
     features_normal = df_normal.drop(columns='labels')
     features_abnormal = df_abnormal.drop(columns='labels')
     labels_normal = df_normal.labels

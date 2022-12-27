@@ -37,12 +37,14 @@ def get_gmm_parameters(gamma, z):
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_gmm_parameters(N, X, Z, K, device):
     np.random.seed(0)
+    model = DAGMM(x_dim=X, z_dim=Z, gamma_dim=K, device=device)
+
     gamma_array = softmax(np.random.randn(N, K), axis=1)
     z_array = np.random.randn(N, Z)
 
     gamma = ndl.Tensor(gamma_array, device=device)
     z = ndl.Tensor(z_array, device=device)
-    phi, mu, sigma = DAGMM.get_gmm_parameters(gamma, z)
+    phi, mu, sigma = model.get_gmm_parameters(gamma, z)
 
     assert phi.shape == (K,)
     assert mu.shape == (K, Z)
@@ -82,13 +84,15 @@ def get_sample_energy(phi, mu, sigma, zi, K):
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_sample_energy(N, X, Z, K, device):
     np.random.seed(0)
+    model = DAGMM(x_dim=X, z_dim=Z, gamma_dim=K, device=device)
+
     gamma_array = softmax(np.random.randn(N, K), axis=1)
     z_array = np.random.randn(N, Z)
 
     gamma = ndl.Tensor(gamma_array, device=device)
     z = ndl.Tensor(z_array, device=device)
-    phi, mu, sigma = DAGMM.get_gmm_parameters(gamma, z)
-    energy = DAGMM.get_sample_energy(z, phi, mu, sigma)
+    phi, mu, sigma = model.get_gmm_parameters(gamma, z)
+    energy = model.get_sample_energy(z, phi, mu, sigma)
 
     gamma_tensor = torch.Tensor(gamma_array).float()
     z_tensor = torch.Tensor(z_array).float()
@@ -110,7 +114,7 @@ def test_sample_energy(N, X, Z, K, device):
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_model_dagmm(N, X, Z, K, device):
     np.random.seed(0)
-    model = DAGMM(x_dim=X, gamma_dim=K, device=device)
+    model = DAGMM(x_dim=X, z_dim=Z, gamma_dim=K, device=device)
 
     x_array = np.random.randn(N, X)
     x = ndl.Tensor(x_array, device=device)
