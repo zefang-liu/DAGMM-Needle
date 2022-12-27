@@ -446,12 +446,19 @@ def parse_kdd_cup():
         one_hot_tables.append(pd.get_dummies(df_kdd_cup[object_column]))
 
     df_numerics = pd.concat([*one_hot_tables, df_kdd_cup.drop(columns=object_columns)], axis=1)
+    df_normal = df_numerics[df_numerics.labels == 0]
+    df_abnormal = df_numerics[df_numerics.labels == 1]
     features = df_numerics.drop(columns='labels')
-    labels = df_numerics.labels
+    features_normal = df_normal.drop(columns='labels')
+    features_abnormal = df_abnormal.drop(columns='labels')
+    labels_normal = df_normal.labels
+    labels_abnormal = df_abnormal.labels
 
-    X = ((features - features.min()) / (features.max() - features.min())).values.astype('float32')
-    y = labels.values.astype('uint8')
-    return X, y
+    X_normal = ((features_normal - features.min()) / (features.max() - features.min())).values.astype('float32')
+    X_abnormal = ((features_abnormal - features.min()) / (features.max() - features.min())).values.astype('float32')
+    y_normal = labels_normal.values.astype('uint8')
+    y_abnormal = labels_abnormal.values.astype('uint8')
+    return X_normal, X_abnormal, y_normal, y_abnormal
     ### END YOUR SOLUTION
 
 
@@ -459,14 +466,19 @@ class KDDCUPDataset(Dataset):
     """
     KDD Cup 1999 Dataset
     """
-    def __init__(self, train=True, train_size=0.8):
+    def __init__(self, train=True, train_ratio=0.5):
         ### BEGIN YOUR SOLUTION
         super().__init__()
 
         from sklearn.model_selection import train_test_split
-        X, y = parse_kdd_cup()
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, train_size=train_size, shuffle=True, random_state=0)
+        X_normal, X_abnormal, y_normal, y_abnormal = parse_kdd_cup()
+        assert 1 - train_ratio >= len(y_abnormal) / (len(y_normal) + len(y_abnormal))
+        train_size = int(train_ratio * (len(y_normal) + len(y_abnormal)))
+
+        X_train, X_normal_test, y_train, y_normal_test = train_test_split(
+            X_normal, y_normal, train_size=train_size, shuffle=True, random_state=0)
+        X_test = np.concatenate((X_normal_test, X_abnormal), axis=0)
+        y_test = np.concatenate((y_normal_test, y_abnormal), axis=0)
 
         if train:
             self.X = X_train

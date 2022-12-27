@@ -13,12 +13,14 @@ _DEVICES = [ndl.cpu(), pytest.param(
 TRAIN = [True, False]
 @pytest.mark.parametrize("train", TRAIN)
 def test_kdd_cup_dataset(train):
-    dataset = ndl.data.KDDCUPDataset(train=train)
+    dataset = ndl.data.KDDCUPDataset(train=train, train_ratio=0.5)
 
     if train:
-        assert len(dataset) == 395216
+        assert len(dataset) == 247010
+        assert tuple(np.bincount(dataset.y)) == (247010,)
     else:
-        assert len(dataset) == 98805
+        assert len(dataset) == 247011
+        assert tuple(np.bincount(dataset.y)) == (149733, 97278)
 
     example = dataset[np.random.randint(len(dataset))]
     assert(isinstance(example, tuple))
