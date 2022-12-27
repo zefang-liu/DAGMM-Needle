@@ -96,6 +96,8 @@ class DataLoader:
             (default: ``1``).
         shuffle (bool, optional): set to ``True`` to have the data reshuffled
             at every epoch (default: ``False``).
+        device: device.
+        dtype: data type.
     """
     dataset: Dataset
     batch_size: Optional[int]
@@ -105,15 +107,24 @@ class DataLoader:
         dataset: Dataset,
         batch_size: Optional[int] = 1,
         shuffle: bool = False,
+        device=None,
+        dtype="float32"
     ):
 
         self.dataset = dataset
         self.shuffle = shuffle
         self.batch_size = batch_size
+        self.device = device
+        self.dtype = dtype
         if not self.shuffle:
             self.ordering = np.array_split(
                 np.arange(len(dataset)), range(batch_size, len(dataset), batch_size)
             )
+
+    def __len__(self):
+        ### BEGIN YOUR SOLUTION
+        return len(self.dataset) // self.batch_size
+        ### END YOUR SOLUTION
 
     def __iter__(self):
         ### BEGIN YOUR SOLUTION
@@ -140,7 +151,8 @@ class DataLoader:
                     batch[i].append(_data)
 
             self.batch_index += 1
-            return tuple(Tensor(np.array(batch[i])) for i in range(len(batch)))
+            return tuple(Tensor(np.array(batch[i]), device=self.device, dtype=self.dtype)
+                         for i in range(len(batch)))
         else:
             raise StopIteration
         ### END YOUR SOLUTION
@@ -419,10 +431,9 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     ### BEGIN YOUR SOLUTION
     seq_len, batch_size = batches.shape
     seq_len = min(bptt, seq_len - i - 1)
-    data = Tensor(batches[i:i + seq_len, :], 
-        device=device, dtype=dtype)
-    target = Tensor(batches[i + 1:i + seq_len + 1, :].reshape(-1), 
-        device=device, dtype=dtype)
+    data = Tensor(batches[i:i + seq_len, :], device=device, dtype=dtype)
+    target = Tensor(batches[i + 1:i + seq_len + 1, :].reshape(-1),
+                    device=device, dtype=dtype)
     return data, target
     ### END YOUR SOLUTION
 

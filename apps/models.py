@@ -123,9 +123,8 @@ class DAGMM(nn.Module):
         return ndl.diagonal(sigma ** (-1)).sum()
         ### END YOUR SOLUTION
 
-    def get_loss(self, x, x_r, z, phi, mu, sigma):
+    def get_loss(self, x, x_r, energy, sigma):
         ### BEGIN YOUR SOLUTION
-        energy = self.get_sample_energy(z, phi, mu, sigma)
         reconstruction_loss = self.get_reconstruction_loss(x, x_r)
         sample_energy_loss = self.get_sample_energy_loss(energy)
         penalty_loss = self.get_penalty_loss(sigma)
