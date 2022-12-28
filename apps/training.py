@@ -24,9 +24,9 @@ def epoch_general_kdd_cup(model, dataloader, opt=None,
         print_step: print step (int)
 
     Returns:
-        avg_loss: average loss over dataset
+        avg_loss: average loss over the dataset
         energies: sample energies
-        targets: labels
+        targets: true labels
     """
     np.random.seed(0)
     ### BEGIN YOUR SOLUTION
@@ -91,6 +91,8 @@ def train_kdd_cup(model, dataloader, n_epochs=1, optimizer=ndl.optim.Adam,
 
     Returns:
         avg_loss: average loss over dataset from last epoch of training
+        energies: sample energies
+        targets: true labels
     """
     np.random.seed(0)
     ### BEGIN YOUR SOLUTION
@@ -129,8 +131,9 @@ def evaluate_kdd_cup(model, dataloader, verbose=True, print_step=500):
         print_step: print step (int)
 
     Returns:
-        avg_acc: average accuracy over dataset
-        avg_loss: average loss over dataset
+        avg_loss: average loss over the dataset
+        energies: sample energies
+        targets: true labels
     """
     np.random.seed(0)
     ### BEGIN YOUR SOLUTION
