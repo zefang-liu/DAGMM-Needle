@@ -110,7 +110,7 @@ def train_kdd_cup(model, dataloader, n_epochs=1, optimizer=ndl.optim.Adam,
         if verbose:
             elapsed_time = time.time() - start_time
             log_time = str(datetime.timedelta(seconds=round(elapsed_time)))
-            log = f'Batch [{epoch + 1}/{n_epochs}]: loss = {avg_loss:.4f}, ' \
+            log = f'Epoch [{epoch + 1}/{n_epochs}]: loss = {avg_loss:.4f}, ' \
                   f'time = {log_time}'
             print(log)
 

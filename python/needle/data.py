@@ -485,6 +485,7 @@ class KDDCUPDataset(Dataset):
     def __init__(self, data_file_path='data/kdd_cup.npz', train=True, train_ratio=0.5, sample_ratio=None):
         ### BEGIN YOUR SOLUTION
         super().__init__()
+        np.random.seed(0)
 
         if os.path.exists(data_file_path):
             data = np.load(data_file_path)
