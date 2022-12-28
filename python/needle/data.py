@@ -494,6 +494,7 @@ class KDDCUPDataset(Dataset):
             y_abnormal = data['y_abnormal']
         else:
             X_normal, X_abnormal, y_normal, y_abnormal = parse_kdd_cup()
+            os.makedirs('data', exist_ok=True)
             np.savez(data_file_path, X_normal=X_normal, X_abnormal=X_abnormal,
                      y_normal=y_normal, y_abnormal=y_abnormal)
 
