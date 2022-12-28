@@ -468,6 +468,12 @@ def parse_kdd_cup():
     X_abnormal = features_abnormal.values.astype('float32')
     y_normal = labels_normal.values.astype('uint8')
     y_abnormal = labels_abnormal.values.astype('uint8')
+
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    X_normal = scaler.fit_transform(X_normal)
+    X_abnormal = scaler.transform(X_abnormal)
+
     return X_normal, X_abnormal, y_normal, y_abnormal
     ### END YOUR SOLUTION
 
@@ -476,15 +482,35 @@ class KDDCUPDataset(Dataset):
     """
     KDD Cup 1999 Dataset
     """
-    def __init__(self, train=True, train_ratio=0.5):
+    def __init__(self, data_file_path='data/kdd_cup.npz', train=True, train_ratio=0.5, sample_ratio=None):
         ### BEGIN YOUR SOLUTION
         super().__init__()
 
-        from sklearn.model_selection import train_test_split
-        X_normal, X_abnormal, y_normal, y_abnormal = parse_kdd_cup()
+        if os.path.exists(data_file_path):
+            data = np.load(data_file_path)
+            X_normal = data['X_normal']
+            X_abnormal = data['X_abnormal']
+            y_normal = data['y_normal']
+            y_abnormal = data['y_abnormal']
+        else:
+            X_normal, X_abnormal, y_normal, y_abnormal = parse_kdd_cup()
+            np.savez(data_file_path, X_normal=X_normal, X_abnormal=X_abnormal,
+                     y_normal=y_normal, y_abnormal=y_abnormal)
+
+        if sample_ratio and 0 < sample_ratio <= 1.0:
+            normal_size = int(sample_ratio * len(y_normal))
+            abnormal_size = int(sample_ratio * len(y_abnormal))
+            normal_indices = np.random.choice(X_normal.shape[0], size=normal_size, replace=False)
+            abnormal_indices = np.random.choice(X_abnormal.shape[0], size=abnormal_size, replace=False)
+            X_normal = X_normal[normal_indices, :]
+            X_abnormal = X_abnormal[abnormal_indices, :]
+            y_normal = y_normal[normal_indices]
+            y_abnormal = y_abnormal[abnormal_indices]
+
         assert 1 - train_ratio >= len(y_abnormal) / (len(y_normal) + len(y_abnormal))
         train_size = int(train_ratio * (len(y_normal) + len(y_abnormal)))
 
+        from sklearn.model_selection import train_test_split
         X_train, X_normal_test, y_train, y_normal_test = train_test_split(
             X_normal, y_normal, train_size=train_size, shuffle=True, random_state=0)
         X_test = np.concatenate((X_normal_test, X_abnormal), axis=0)

@@ -96,7 +96,8 @@ class DAGMM(nn.Module):
         sigma_inv = ndl.inv(sigma + sigma_eps)  # (K, Z, Z)
         sigma_inv = sigma_inv.reshape(shape=(1, K, Z, Z)).broadcast_to(
             shape=(N, K, Z, Z))  # (N, K, Z, Z)
-        sigma_det = ndl.det(sigma * 2 * pi).reshape(shape=(1, K)).broadcast_to(
+        sigma_det = ndl.det((sigma + sigma_eps) * 2 * pi)  # (K,)
+        sigma_det = sigma_det.reshape(shape=(1, K)).broadcast_to(
             shape=(N, K))  # (N, K)
         phi = phi.reshape(shape=(1, K)).broadcast_to(shape=(N, K))  # (N, K)
 

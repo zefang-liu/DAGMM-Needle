@@ -4,6 +4,7 @@ import needle as ndl
 import needle.nn as nn
 from models import *
 import time
+import datetime
 
 
 ### KDD Cup Training ###
@@ -59,8 +60,10 @@ def epoch_general_kdd_cup(model, dataloader, opt=None,
 
         if verbose and (i_batch + 1) % print_step == 0:
             elapsed_time = time.time() - start_time
+            log_time = str(datetime.timedelta(seconds=round(elapsed_time)))
             log = f'Batch [{i_batch + 1}/{len(dataloader)}]: loss = {total_loss / total_num:.4f}, ' \
-                  f'time = {elapsed_time:.2f}'
+                  f'time = {log_time}'
+
             print(log)
 
     avg_loss = total_loss / total_num
@@ -106,8 +109,9 @@ def train_kdd_cup(model, dataloader, n_epochs=1, optimizer=ndl.optim.Adam,
 
         if verbose:
             elapsed_time = time.time() - start_time
+            log_time = str(datetime.timedelta(seconds=round(elapsed_time)))
             log = f'Batch [{epoch + 1}/{n_epochs}]: loss = {avg_loss:.4f}, ' \
-                  f'time = {elapsed_time:.2f}'
+                  f'time = {log_time}'
             print(log)
 
     return avg_loss, energies, targets
